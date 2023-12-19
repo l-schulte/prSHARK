@@ -1,11 +1,11 @@
 #!/bin/bash
 
 current=`pwd`
-mkdir -p /tmp/prSHARK/
-cp * /tmp/prSHARK/
-cp -R ../prSHARK /tmp/prSHARK/
-cp ../setup.py /tmp/prSHARK/
-cp ../smartshark_plugin.py /tmp/prSHARK/
-cd /tmp/prSHARK/
+mkdir -p /tmp/reviewSHARK/
+cp * /tmp/reviewSHARK/
+cp -R ../reviewSHARK /tmp/reviewSHARK/
+cp ../setup.py /tmp/reviewSHARK/
+cp ../smartshark_plugin.py /tmp/reviewSHARK/
+cd /tmp/reviewSHARK/
 
-tar -cvf "$current/prSHARK_plugin.tar" --exclude=*.tar --exclude=build_plugin.sh --exclude=*/tests --exclude=*/__pycache__ --exclude=*.pyc *
+tar -cvf "$current/reviewSHARK_plugin.tar" --exclude=*.tar --exclude=build_plugin.sh --exclude=*/tests --exclude=*/__pycache__ --exclude=*.pyc *

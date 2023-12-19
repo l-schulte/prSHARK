@@ -1,12 +1,13 @@
-# prSHARK
+# reviewSHARK
 
-![CI](https://github.com/smartshark/prSHARK/workflows/CI/badge.svg)
+![CI](https://github.com/smartshark/reviewSHARK/workflows/CI/badge.svg)
 
-Collect pull request information for smartSHARK.
+Collect code review information for smartSHARK.
 
-Currently only Github is supported.
+Currently only Gerrit is supported.
 
 ## Create venv and install dependencies
+
 ```bash
 python -m venv .
 source bin/activate
@@ -14,11 +15,13 @@ pip install -r requirements.txt
 ```
 
 ## Run tests
+
 ```bash
 python -m unittest
 ```
 
 ## Build smartSHARK plugin bundle for serverSHARK
+
 ```bash
 cd plugin_packaging
 ./build_plugin.sh
@@ -26,7 +29,8 @@ cd plugin_packaging
 
 ## Execution for smartSHARK
 
-prSHARK tries to link commits, so it would be best if the repository is already collected via vcsSHARK. Otherwise only the project has to exist.
+reviewSHARK tries to link commits, so it would be best if the repository is already collected via vcsSHARK. Otherwise only the project has to exist.
+
 ```bash
 python smartshark_plugin.py -U $DBUSER -P $DBPASS -p $DBPORT -DB $DBNAME -a $AUTHENTICATION_DB -pn $PROJECT_NAME -i $PULL_REQUEST_SYSTEM_URL -b $BACKEND -t $TOKEN
 ```

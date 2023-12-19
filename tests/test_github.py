@@ -10,7 +10,7 @@ from argparse import Namespace
 import mongoengine
 
 from pycoshark.mongomodels import Project, VCSSystem, Commit, PullRequestSystem, PullRequest, People, PullRequestReview, PullRequestReviewComment, PullRequestComment, PullRequestEvent, PullRequestCommit, PullRequestFile
-from prSHARK.backends.github import Github
+from reviewSHARK.backends.github import Github
 
 # load simple fixtures (taken from the github api examples)
 with open('tests/fixtures/user.json') as f:
@@ -86,7 +86,7 @@ class TestGithubBackend(unittest.TestCase):
         """Tear down the mongomock connection."""
         mongoengine.connection.disconnect()
 
-    @patch('prSHARK.backends.github.Github._send_request', side_effect=mock_return)
+    @patch('reviewSHARK.backends.github.Github._send_request', side_effect=mock_return)
     def test_pr_list(self, mock_request):
         """Test Github Parser pull request list response parsing."""
 
@@ -95,7 +95,8 @@ class TestGithubBackend(unittest.TestCase):
         project = Project.objects.get(name='test')
         pr_system = PullRequestSystem.objects.get(project_id=project.id)
 
-        vcs_system = VCSSystem(project_id=project.id, url='https://github.com/octocat/Hello-World.git', repository_type='git')
+        vcs_system = VCSSystem(project_id=project.id,
+                               url='https://github.com/octocat/Hello-World.git', repository_type='git')
         vcs_system.save()
 
         c = Commit(vcs_system_id=vcs_system.id, revision_hash='6dcb09b5b57875f334f61aebed695e2e4193db5e')

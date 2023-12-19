@@ -1,6 +1,6 @@
 {
-    "name": "prSHARK",
-    "author": "Alexander Trautsch",
+    "name": "reviewSHARK",
+    "author": "Lukas Schulte",
     "version": "1.0.2",
     "plugin_type": "other",
     "linux_libraries": [

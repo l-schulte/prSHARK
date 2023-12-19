@@ -12,9 +12,9 @@ from mongoengine import connect
 from pycoshark.utils import get_base_argparser, create_mongodb_uri_string
 from pycoshark.mongomodels import Project, PullRequestSystem
 
-from prSHARK.config import Config
+from reviewSHARK.config import Config
 
-log = logging.getLogger('prSHARK')
+log = logging.getLogger('reviewSHARK')
 log.setLevel(logging.INFO)
 i = logging.StreamHandler(sys.stdout)
 e = logging.StreamHandler(sys.stderr)
@@ -36,7 +36,8 @@ def main(args):
     cfg = Config(args)
 
     # create connection
-    uri = create_mongodb_uri_string(args.db_user, args.db_password, args.db_hostname, args.db_port, args.db_authentication, args.ssl)
+    uri = create_mongodb_uri_string(args.db_user, args.db_password, args.db_hostname,
+                                    args.db_port, args.db_authentication, args.ssl)
     connect(args.db_database, host=uri)
 
     # Get the project for which issue data is collected
@@ -56,7 +57,7 @@ def main(args):
 
     # now we do the actual work, we are lazy for now and to not use a more dynamic import of backends
     if args.backend == 'github':
-        from prSHARK.backends.github import Github
+        from reviewSHARK.backends.github import Github
         gh = Github(cfg, project, pr_system)
         gh.run()
     else:
@@ -72,7 +73,8 @@ if __name__ == '__main__':
     parser = get_base_argparser('Collects information from pull requests', '0.0.0')
     parser.add_argument('-i', '--prurl', help='URL to the pull request system.', required=True)
     parser.add_argument('-pn', '--project-name', help='Name of the project.', required=True)
-    parser.add_argument('-b', '--backend', help='Backend to use for the parsing', default='github', choices=available_backends)
+    parser.add_argument('-b', '--backend', help='Backend to use for the parsing',
+                        default='github', choices=available_backends)
     parser.add_argument('-t', '--token', help='Token for accessing.', default=None)
 
     parser.add_argument('-PH', '--proxy-host', help='Proxy hostname or IP address.', default=None)
@@ -82,5 +84,6 @@ if __name__ == '__main__':
     parser.add_argument('-iU', '--issue-user', help='Username to use the pull request system', default=None)
     parser.add_argument('-iP', '--issue-password', help='Password to use the pull request system', default=None)
 
-    parser.add_argument('-ll', '--log-level', help='Log level for stdout (DEBUG, INFO), default INFO', default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
+    parser.add_argument('-ll', '--log-level', help='Log level for stdout (DEBUG, INFO), default INFO',
+                        default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
     main(parser.parse_args())

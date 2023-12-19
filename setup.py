@@ -9,16 +9,16 @@ if not sys.version_info[0] == 3:
     sys.exit(1)
 
 setup(
-    name='prSHARK',
+    name='reviewSHARK',
     version='1.0.2',
-    author='Alexander Trautsch',
-    author_email='alexander.trautsch@cs.uni-goettingen.de',
-    description='Collect data from pull request systems',
+    author='Lukas Schulte',
+    author_email='lukas.schulte@uni-passau.de',
+    description='Collect data from code review systems',
     install_requires=['mongoengine', 'pymongo', 'requests>=2.10.0', 'oauthlib>=3.0.0',
                       'cryptography>=1.3.4', 'python-dateutil', 'validate_email',
                       'pycoshark>=1.4.1', 'mock'],
-    url='https://github.com/smartshark/prSHARK',
-    download_url='https://github.com/smartshark/prSHARK/zipball/master',
+    url='https://github.com/smartshark/reviewSHARK',
+    download_url='https://github.com/smartshark/reviewSHARK/zipball/master',
     packages=find_packages(),
     test_suite='tests',
     zip_safe=False,

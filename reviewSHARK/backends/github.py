@@ -18,7 +18,7 @@ class Github():
 
     def __init__(self, config, project, pull_request_system):
         self.config = config
-        self._log = logging.getLogger('prSHARK.github')
+        self._log = logging.getLogger('reviewSHARK.github')
 
         self._prs = pull_request_system
         self._p = project
@@ -47,7 +47,8 @@ class Github():
             resp = requests.get(url, headers=headers, proxies=self.config.get_proxy_dictionary(), auth=auth)
 
             if resp.status_code != 200:
-                self._log.error("Problem with getting data via url %s. Code: %s, Error: %s", url, resp.status_code, resp.text)
+                self._log.error("Problem with getting data via url %s. Code: %s, Error: %s",
+                                url, resp.status_code, resp.text)
 
                 # check if we just miss some field, e.g., pulls/{number}/files?&page=1&per_page=100.
                 # Error: {"message":"Sorry, there was a problem generating this diff. The repository may be missing relevant data.","errors":[{"resource":"PullRequest","field":"diff","code":"not_available"}],"documentation_url":"https://docs.github.com/v3/pulls#diff-error"}
@@ -56,11 +57,13 @@ class Github():
                     if r:
                         if 'errors' in r.keys():
                             for e in r['errors']:
-                                if e['resource'] == 'PullRequest' and e['field'] == 'diff' and e['code'] == 'not_available' and 'per_page' in url:  # we try to be as explicit as possible here
+                                # we try to be as explicit as possible here
+                                if e['resource'] == 'PullRequest' and e['field'] == 'diff' and e['code'] == 'not_available' and 'per_page' in url:
                                     self._log.error('unfetchable files for pull request, returning [], try: %s', tries)
                                     return []
                 if resp.status_code == 500 and tries == 2:  # problem for some part of endpoints, e.g., https://api.github.com/repos/apache/kafka/pulls/3490/reviews/48104142/comments?&page=1&per_page=100
-                    self._log.error("Problem with getting data via url %s. Code: %s, Error: %s", url, resp.status_code, resp.text)
+                    self._log.error("Problem with getting data via url %s. Code: %s, Error: %s",
+                                    url, resp.status_code, resp.text)
                     if 'per_page' in url:
                         self._log.error('unfetchable list, returning [], try: %s', tries)
                         return []
@@ -222,7 +225,8 @@ class Github():
 
     def fetch_pr_list(self):
         """Fetch complete list of pull requests for this the url passed on the command line."""
-        url = '{}?state=all'.format(self.config.tracking_url)  # this is where we would put since=last_updated_at if it would be supported by the github api
+        url = '{}?state=all'.format(
+            self.config.tracking_url)  # this is where we would put since=last_updated_at if it would be supported by the github api
         return self._fetch_all_pages(url)
 
     def fetch_review_list(self, pr_number):
@@ -323,7 +327,8 @@ class Github():
             # pr commits
             for pr_commit in self.fetch_commit_list(pr['number']):
                 try:
-                    mongo_pr_commit = PullRequestCommit.objects.get(pull_request_id=mongo_pr.id, commit_sha=pr_commit['sha'])
+                    mongo_pr_commit = PullRequestCommit.objects.get(
+                        pull_request_id=mongo_pr.id, commit_sha=pr_commit['sha'])
                 except PullRequestCommit.DoesNotExist:
                     mongo_pr_commit = PullRequestCommit(pull_request_id=mongo_pr.id, commit_sha=pr_commit['sha'])
 
@@ -331,17 +336,20 @@ class Github():
                 if pr_commit['author'] and 'url' in pr_commit['author'].keys():
                     mongo_pr_commit.author_id = self._get_person(pr_commit['author']['url'])
                 else:
-                    mongo_pr_commit.author_id = self._get_person_without_url(pr_commit['commit']['author']['name'], pr_commit['commit']['author']['email'])
+                    mongo_pr_commit.author_id = self._get_person_without_url(
+                        pr_commit['commit']['author']['name'], pr_commit['commit']['author']['email'])
 
                 if pr_commit['committer'] and 'url' in pr_commit['committer'].keys():
                     mongo_pr_commit.committer_id = self._get_person(pr_commit['committer']['url'])
                 else:
-                    mongo_pr_commit.commiter_id = self._get_person_without_url(pr_commit['commit']['committer']['name'], pr_commit['commit']['committer']['email'])
+                    mongo_pr_commit.commiter_id = self._get_person_without_url(
+                        pr_commit['commit']['committer']['name'], pr_commit['commit']['committer']['email'])
 
                 mongo_pr_commit.parents = [p['sha'] for p in pr_commit['parents']]
                 mongo_pr_commit.message = pr_commit['commit']['message']
                 mongo_pr_commit.commit_repo_url = self._get_repo_url(pr_commit['url'])
-                mongo_pr_commit.commit_id = self._get_commit_id(mongo_pr_commit.commit_sha, mongo_pr_commit.commit_repo_url)
+                mongo_pr_commit.commit_id = self._get_commit_id(
+                    mongo_pr_commit.commit_sha, mongo_pr_commit.commit_repo_url)
                 mongo_pr_commit.save()
 
             # pr files, sha is not a link to PullRequestCommit, maybe its the file hash
@@ -388,9 +396,11 @@ class Github():
                 # pull request review comment
                 for prrc in self.fetch_review_comment_list(pr['number'], prr['id']):
                     try:
-                        mongo_prrc = PullRequestReviewComment.objects.get(pull_request_review_id=mongo_prr.id, external_id=str(prrc['id']))
+                        mongo_prrc = PullRequestReviewComment.objects.get(
+                            pull_request_review_id=mongo_prr.id, external_id=str(prrc['id']))
                     except PullRequestReviewComment.DoesNotExist:
-                        mongo_prrc = PullRequestReviewComment(pull_request_review_id=mongo_prr.id, external_id=str(prrc['id']))
+                        mongo_prrc = PullRequestReviewComment(
+                            pull_request_review_id=mongo_prr.id, external_id=str(prrc['id']))
 
                     mongo_prrc.diff_hunk = prrc['diff_hunk']
 
@@ -413,13 +423,15 @@ class Github():
                     # we link the PullRequestCommits directly if we can
                     # the pullrequestcommits may have been removed or squashed, if that is the case we only have the commit_shas
                     try:
-                        n1_prc = PullRequestCommit.objects.get(pull_request_id=mongo_pr.id, commit_sha=mongo_prrc.commit_sha)
+                        n1_prc = PullRequestCommit.objects.get(
+                            pull_request_id=mongo_pr.id, commit_sha=mongo_prrc.commit_sha)
                         mongo_prrc.pull_request_commit_id = n1_prc.id
                     except PullRequestCommit.DoesNotExist:
                         pass
 
                     try:
-                        n2_prc = PullRequestCommit.objects.get(pull_request_id=mongo_pr.id, commit_sha=mongo_prrc.original_commit_sha)
+                        n2_prc = PullRequestCommit.objects.get(
+                            pull_request_id=mongo_pr.id, commit_sha=mongo_prrc.original_commit_sha)
                         mongo_prrc.original_pull_request_commit_id = n2_prc.id
                     except PullRequestCommit.DoesNotExist:
                         pass
@@ -440,9 +452,11 @@ class Github():
 
                     if 'in_reply_to_id' in prrc.keys() and prrc['in_reply_to_id']:
                         try:
-                            ref_prrc = PullRequestReviewComment.objects.get(pull_request_review_id=mongo_prr.id, external_id=str(prrc['in_reply_to_id']))
+                            ref_prrc = PullRequestReviewComment.objects.get(
+                                pull_request_review_id=mongo_prr.id, external_id=str(prrc['in_reply_to_id']))
                         except PullRequestReviewComment.DoesNotExist:
-                            ref_prrc = PullRequestReviewComment(pull_request_review_id=mongo_prr.id, external_id=str(prrc['in_reply_to_id']))
+                            ref_prrc = PullRequestReviewComment(
+                                pull_request_review_id=mongo_prr.id, external_id=str(prrc['in_reply_to_id']))
                             ref_prrc.save()  # create empty for ref, will get populated later
                         mongo_prrc.in_reply_to_id = ref_prrc.id
                     mongo_prrc.save()
