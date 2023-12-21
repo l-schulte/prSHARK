@@ -289,7 +289,7 @@ class Gerrit:
         except DoesNotExist:
             people = People(
                 username=raw_people["username"],
-                email=elvis(raw_people, "email", f'{raw_people["username"]}@no_email.reviewSHARK'),
+                email=elvis(raw_people, "email", f'{raw_people["username"]}@no_email.gerrit.reviewSHARK'),
                 name=raw_people["name"],
             )
             saved_people = people.save()
