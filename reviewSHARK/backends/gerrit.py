@@ -6,7 +6,7 @@ import dateutil
 import time
 
 from mongoengine.errors import DoesNotExist
-from pycoshark.mongomodels import CodeReview, CodeReviewChangeLog, CodeReviewComment, CodeReviewRevision, People
+from pycoshark.mongomodels import CodeReview, CodeReviewChangeLog, CodeReviewComment, CodeReviewRevision, People, Issue
 
 
 def elvis(dict, key, fallback_value=None):
@@ -120,6 +120,8 @@ class Gerrit:
         review.labels = elvis(raw_review, "hashtags")
 
         review.change_id = raw_review["change_id"]
+        review.topic = elvis(raw_review, "topic")
+        review.topic_issue_id = self.get_issue_from_topic(review.topic)
         review.author_id = self._get_people_id(raw_review["owner"])
         review.submitter_id = self._get_people_id(elvis(raw_review, "submitter"))
 
@@ -134,6 +136,22 @@ class Gerrit:
         # review.more = {}
 
         return review.save()
+
+    def get_issue_from_topic(self, topic) -> Issue:
+        """Fetches the issue based on the id extracted from the topic.
+
+        Assumes that the topic is in the format: "bug/1234" or "bp/name-of-task".
+        """
+
+        if not topic or "/" not in topic:
+            return None
+
+        issue_external_id = topic.split("/")[-1]
+
+        try:
+            return Issue.objects.get(external_id=issue_external_id)
+        except DoesNotExist:
+            return None
 
     def get_change_logs(self, code_review_external_id) -> list[dict]:
         """Fetches the change log for the code review"""
