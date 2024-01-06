@@ -121,7 +121,7 @@ class Gerrit:
 
         review.change_id = raw_review["change_id"]
         review.topic = elvis(raw_review, "topic")
-        review.topic_issue_id = self.get_issue_from_topic(review.topic)
+        review.topic_issue_id = self.get_issue_id_from_topic(review.topic)
         review.author_id = self._get_people_id(raw_review["owner"])
         review.submitter_id = self._get_people_id(elvis(raw_review, "submitter"))
 
@@ -137,7 +137,7 @@ class Gerrit:
 
         return review.save()
 
-    def get_issue_from_topic(self, topic) -> Issue:
+    def get_issue_id_from_topic(self, topic) -> Issue:
         """Fetches the issue based on the id extracted from the topic.
 
         Assumes that the topic is in the format: "bug/1234" or "bp/name-of-task".
@@ -149,7 +149,9 @@ class Gerrit:
         issue_external_id = topic.split("/")[-1]
 
         try:
-            return Issue.objects.get(external_id=issue_external_id)
+            issue_id = Issue.objects.get(external_id=issue_external_id).id
+            logging.debug("Found issue %s for topic %s", issue_id, topic)
+            return issue_id
         except DoesNotExist:
             return None
 
