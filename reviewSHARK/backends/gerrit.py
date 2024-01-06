@@ -300,9 +300,9 @@ class Gerrit:
         try:
             # Try to identify the user by their email. If no email is given try the username.
             if "email" in raw_people:
-                saved_people = People.objects.get(email=raw_people["email"], name=raw_people["display_name"])
+                saved_people = People.objects.get(email=raw_people["email"], name=raw_people["name"])
             else:
-                saved_people = People.objects.get(username=raw_people["name"], name=raw_people["display_name"])
+                saved_people = People.objects.get(username=raw_people["username"], name=raw_people["name"])
 
         except DoesNotExist:
             people = People(
