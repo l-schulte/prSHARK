@@ -137,7 +137,7 @@ class Gerrit:
 
         return review.save()
 
-    def get_issue_id_from_topic(self, topic) -> Issue:
+    def get_issue_id_from_topic(self, topic):
         """Fetches the issue based on the id extracted from the topic.
 
         Assumes that the topic is in the format: "bug/1234" or "bp/name-of-task".
@@ -150,9 +150,10 @@ class Gerrit:
 
         try:
             issue_id = Issue.objects.get(external_id=issue_external_id).id
-            logging.debug("Found issue %s for topic %s", issue_id, topic)
+            self._log.debug("Found issue %s for topic %s", issue_id, topic)
             return issue_id
         except DoesNotExist:
+            self._log.debug("Found no issue topic %s", topic)
             return None
 
     def get_change_logs(self, code_review_external_id) -> list[dict]:
@@ -307,9 +308,12 @@ class Gerrit:
                 saved_people = People.objects.get(username=raw_people["username"], name=raw_people["name"])
 
         except DoesNotExist:
+            username = elvis(raw_people, "username", f'{raw_people["name"]}@no_username.gerrit.reviewSHARK')
+            email = elvis(raw_people, "email", f'{raw_people["username"]}@no_email.gerrit.reviewSHARK')
+
             people = People(
-                username=raw_people["username"],
-                email=elvis(raw_people, "email", f'{raw_people["username"]}@no_email.gerrit.reviewSHARK'),
+                username=username,
+                email=email,
                 name=raw_people["name"],
             )
             saved_people = people.save()
