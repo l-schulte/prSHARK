@@ -309,7 +309,7 @@ class Gerrit:
 
         except DoesNotExist:
             username = elvis(raw_people, "username", f'{raw_people["name"]}@no_username.gerrit.reviewSHARK')
-            email = elvis(raw_people, "email", f'{raw_people["username"]}@no_email.gerrit.reviewSHARK')
+            email = elvis(raw_people, "email", f"{username}@no_email.gerrit.reviewSHARK")
 
             people = People(
                 username=username,
