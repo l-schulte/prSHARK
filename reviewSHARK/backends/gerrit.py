@@ -49,6 +49,9 @@ class Gerrit:
     # revision id cache
     revision_id_cache: dict = {}
 
+    # issue id cache
+    issue_id_cache: dict = {}
+
     def __init__(self, config, project, review_system: CodeReviewSystem):
         self.config = config
         self._log = logging.getLogger("reviewSHARK.github")
@@ -178,8 +181,14 @@ class Gerrit:
         issue_ids = set()
 
         for potential_issue_external_id in potential_issue_external_ids:
+            if potential_issue_external_id in self.issue_id_cache:
+                issue_ids.add(self.issue_id_cache[potential_issue_external_id])
+                continue
+
             try:
-                issue_ids.add(Issue.objects.get(external_id=potential_issue_external_id).id)
+                issue_id = Issue.objects.get(external_id=potential_issue_external_id).id
+                self.issue_id_cache[potential_issue_external_id] = issue_id
+                issue_ids.add(issue_id)
             except DoesNotExist:
                 continue
 
