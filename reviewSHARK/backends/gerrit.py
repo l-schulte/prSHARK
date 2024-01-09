@@ -152,7 +152,7 @@ class Gerrit:
         """Returns the description from the revisions"""
 
         if elvis(raw_review, "revisions") and len(raw_review["revisions"].values()):
-            return elvis(raw_review["revisions"].values()[-1], "commit_with_footers")
+            return elvis(list(raw_review["revisions"].values())[-1], "commit_with_footers")
 
     def _get_issue_id_from_topic(self, topic) -> Issue:
         """Fetches the issue based on the id extracted from the topic.
