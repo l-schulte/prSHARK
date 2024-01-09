@@ -233,7 +233,7 @@ class Gerrit:
 
         raw_revision_review["revision_external_id"] = revision_external_id
         raw_revision_review["commit"] = revision["commit"]["parents"][0]["commit"]
-        raw_revision_review["description"] = revision["description"]
+        raw_revision_review["description"] = elvis(revision, "description")
 
         return raw_revision_review
 
