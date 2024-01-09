@@ -160,7 +160,7 @@ class Gerrit:
         Assumes that the topic is in the format: "bug/1234" or "bp/name-of-task".
         """
 
-        if not topic or "/" not in topic:
+        if not topic:
             return None
 
         issue_external_id = topic.split("/")[-1]
