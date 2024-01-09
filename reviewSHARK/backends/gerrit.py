@@ -106,6 +106,7 @@ class Gerrit:
                 url,
                 params={
                     "start": len(raw_reviews),
+                    "n": 50,
                     "q": f"repo:{project_name}",
                     "o": ["ALL_REVISIONS", "DETAILED_ACCOUNTS", "ALL_COMMITS", "SKIP_DIFFSTAT", "COMMIT_FOOTERS"],
                 },
