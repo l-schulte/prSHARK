@@ -4,6 +4,7 @@ import requests
 import json
 import dateutil
 import time
+import re
 
 from mongoengine.errors import DoesNotExist
 from pycoshark.mongomodels import (
@@ -69,13 +70,11 @@ class Gerrit:
             # store review
             review = self.store_review(raw_review)
 
-            revision_info: list[(str, str)] = [
-                (key, item["commit"]["parents"][0]["commit"]) for key, item in raw_review["revisions"].items()
-            ]
+            revision_info: list[(str, str)] = [(key, revision) for key, item in raw_review["revisions"].items()]
 
             # get and store revisions
-            for revision_external_id, commit_hash in revision_info:
-                raw_revision = self.get_revision(raw_review_id, revision_external_id, commit_hash)
+            for revision_external_id, revision in revision_info:
+                raw_revision = self.get_revision(raw_review_id, revision_external_id, revision)
                 revision = self.store_revision(raw_revision, review.id)
                 review.revisions.append(revision.id)
 
@@ -120,6 +119,9 @@ class Gerrit:
         except DoesNotExist:
             review = CodeReview(external_id=raw_review["id"])
 
+        description = self._get_description_from_revisions(raw_review)
+        topic = elvis(raw_review, "topic")
+
         review.code_review_system_ids = [self.review_system.id]
         review.external_id = raw_review["id"]
         review.external_number = raw_review["_number"]
@@ -127,12 +129,12 @@ class Gerrit:
         review.revisions = []
 
         review.title = raw_review["subject"]
-        review.description = self._get_description_from_revisions(raw_review)
+        review.description = description
         review.labels = elvis(raw_review, "hashtags")
 
         review.change_id = raw_review["change_id"]
-        review.topic = elvis(raw_review, "topic")
-        review.linked_issue_id = self._get_issue_id_from_topic(review.topic)
+        review.topic = topic
+        review.linked_issue_id = self._get_issue_id(topic, description)
         review.author_id = self._get_people_id(raw_review["owner"])
         review.submitter_id = self._get_people_id(elvis(raw_review, "submitter"))
 
@@ -154,21 +156,34 @@ class Gerrit:
         if elvis(raw_review, "revisions") and len(raw_review["revisions"].values()):
             return elvis(list(raw_review["revisions"].values())[-1], "commit_with_footers")
 
-    def _get_issue_id_from_topic(self, topic) -> Issue:
+    def _get_issue_id(self, topic, description) -> list[str]:
         """Fetches the issue based on the id extracted from the topic.
 
         Assumes that the topic is in the format: "bug/1234" or "bp/name-of-task".
         """
 
-        if not topic:
+        if not self.config.link:
             return None
 
-        issue_external_id = topic.split("/")[-1]
+        potential_issue_external_ids = []
 
-        try:
-            return Issue.objects.get(external_id=issue_external_id).id
-        except DoesNotExist:
-            return None
+        if topic:
+            potential_issue_external_ids.append(topic.split("/")[-1])
+        elif description:
+            p = re.compile("bug: *#?(\d+)", re.IGNORECASE)
+            m = p.search(description)
+            if m:
+                potential_issue_external_ids.append(m.group())
+
+        issue_ids = set()
+
+        for potential_issue_external_id in potential_issue_external_ids:
+            try:
+                issue_ids.add(Issue.objects.get(external_id=potential_issue_external_id).id)
+            except DoesNotExist:
+                continue
+
+        return list(issue_ids)
 
     def get_change_logs(self, code_review_external_id) -> list[dict]:
         """Fetches the change log for the code review"""
@@ -209,17 +224,16 @@ class Gerrit:
 
         return change_logs
 
-    def get_revision(self, code_review_external_id, revision_external_id, commit_hash) -> dict:
+    def get_revision(self, code_review_external_id, revision_external_id, revision) -> dict:
         """Fetches all revisions for the code review"""
 
         base_url = self.base_url + "/changes/" + code_review_external_id + "/revisions/" + revision_external_id
 
         raw_revision_review = self._make_request(base_url + "/review")
-        revision_description = self._make_request(base_url + "/description")
 
         raw_revision_review["revision_external_id"] = revision_external_id
-        raw_revision_review["commit"] = commit_hash
-        raw_revision_review["description"] = revision_description
+        raw_revision_review["commit"] = revision["commit"]["parents"][0]["commit"]
+        raw_revision_review["description"] = revision["description"]
 
         return raw_revision_review
 

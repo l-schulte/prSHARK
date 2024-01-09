@@ -90,6 +90,8 @@ if __name__ == "__main__":
     parser.add_argument("-iU", "--issue-user", help="Username to use the pull request system", default=None)
     parser.add_argument("-iP", "--issue-password", help="Password to use the pull request system", default=None)
 
+    parser.add_argument("--link", default=True)
+
     parser.add_argument(
         "-ll",
         "--log-level",
