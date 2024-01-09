@@ -98,14 +98,14 @@ class Gerrit:
 
         url = self.base_url + "/changes/"  # "https://review.opendev.org/changes?q=repo:openstack/nova"
 
-        raw_reviews = []
+        yielded_reviews = 0
 
         next_page = True
         while next_page:
             data = self._make_request(
                 url,
                 params={
-                    "start": len(raw_reviews),
+                    "start": yielded_reviews,
                     "n": 50,
                     "q": f"repo:{project_name}",
                     "o": ["ALL_REVISIONS", "DETAILED_ACCOUNTS", "ALL_COMMITS", "SKIP_DIFFSTAT", "COMMIT_FOOTERS"],
@@ -113,6 +113,8 @@ class Gerrit:
             )
             for review in data:
                 yield review
+
+            yielded_reviews += len(data)
             next_page = elvis(data[-1], "_more_changes", False)
 
     def store_review(self, raw_review) -> CodeReview:
