@@ -6,7 +6,15 @@ import dateutil
 import time
 
 from mongoengine.errors import DoesNotExist
-from pycoshark.mongomodels import CodeReview, CodeReviewChangeLog, CodeReviewComment, CodeReviewRevision, People, Issue
+from pycoshark.mongomodels import (
+    CodeReview,
+    CodeReviewChangeLog,
+    CodeReviewComment,
+    CodeReviewRevision,
+    People,
+    CodeReviewSystem,
+    Issue,
+)
 
 
 def elvis(dict, key, fallback_value=None):
@@ -40,12 +48,15 @@ class Gerrit:
     # revision id cache
     revision_id_cache: dict = {}
 
-    def __init__(self, config, project, review_system):
+    def __init__(self, config, project, review_system: CodeReviewSystem):
         self.config = config
         self._log = logging.getLogger("reviewSHARK.github")
 
         self.project = project
         self.review_system = review_system
+
+        self.review_system.type = "gerrit"
+        self.review_system.save()
 
         self.base_url = config.tracking_url
 
@@ -116,12 +127,11 @@ class Gerrit:
         review.revisions = []
 
         review.title = raw_review["subject"]
-        review.description = elvis(raw_review, "topic")
         review.labels = elvis(raw_review, "hashtags")
 
         review.change_id = raw_review["change_id"]
         review.topic = elvis(raw_review, "topic")
-        review.topic_issue_id = self.get_issue_id_from_topic(review.topic)
+        review.linked_issue_id = self._get_issue_id_from_topic(review.topic)
         review.author_id = self._get_people_id(raw_review["owner"])
         review.submitter_id = self._get_people_id(elvis(raw_review, "submitter"))
 
@@ -137,7 +147,7 @@ class Gerrit:
 
         return review.save()
 
-    def get_issue_id_from_topic(self, topic):
+    def _get_issue_id_from_topic(self, topic) -> Issue:
         """Fetches the issue based on the id extracted from the topic.
 
         Assumes that the topic is in the format: "bug/1234" or "bp/name-of-task".
@@ -149,11 +159,8 @@ class Gerrit:
         issue_external_id = topic.split("/")[-1]
 
         try:
-            issue_id = Issue.objects.get(external_id=issue_external_id).id
-            self._log.debug("Found issue %s for topic %s", issue_id, topic)
-            return issue_id
+            return Issue.objects.get(external_id=issue_external_id).id
         except DoesNotExist:
-            self._log.debug("Found no issue topic %s", topic)
             return None
 
     def get_change_logs(self, code_review_external_id) -> list[dict]:
