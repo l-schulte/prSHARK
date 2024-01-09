@@ -134,7 +134,7 @@ class Gerrit:
 
         review.change_id = raw_review["change_id"]
         review.topic = topic
-        review.linked_issue_id = self._get_issue_id(topic, description)
+        review.linked_issue_ids = self._get_issue_id(topic, description)
         review.author_id = self._get_people_id(raw_review["owner"])
         review.submitter_id = self._get_people_id(elvis(raw_review, "submitter"))
 
