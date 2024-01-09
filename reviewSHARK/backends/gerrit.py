@@ -105,7 +105,7 @@ class Gerrit:
                 params={
                     "start": len(raw_reviews),
                     "q": f"repo:{project_name}",
-                    "o": ["ALL_REVISIONS", "DETAILED_ACCOUNTS", "ALL_COMMITS", "SKIP_DIFFSTAT"],
+                    "o": ["ALL_REVISIONS", "DETAILED_ACCOUNTS", "ALL_COMMITS", "SKIP_DIFFSTAT", "COMMIT_FOOTERS"],
                 },
             )
             for review in data:
@@ -127,6 +127,7 @@ class Gerrit:
         review.revisions = []
 
         review.title = raw_review["subject"]
+        review.description = self._get_description_from_revisions(raw_review)
         review.labels = elvis(raw_review, "hashtags")
 
         review.change_id = raw_review["change_id"]
@@ -146,6 +147,12 @@ class Gerrit:
         # review.more = {}
 
         return review.save()
+
+    def _get_description_from_revisions(self, raw_review) -> str:
+        """Returns the description from the revisions"""
+
+        if elvis(raw_review, "revisions") and len(raw_review["revisions"]):
+            return elvis(raw_review["revisions"][-1], "commit_with_footers")
 
     def _get_issue_id_from_topic(self, topic) -> Issue:
         """Fetches the issue based on the id extracted from the topic.
