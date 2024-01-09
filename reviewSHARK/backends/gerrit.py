@@ -70,7 +70,7 @@ class Gerrit:
             # store review
             review = self.store_review(raw_review)
 
-            revision_info: list[(str, str)] = [(key, revision) for key, item in raw_review["revisions"].items()]
+            revision_info: list[(str, str)] = [(key, revision) for key, revision in raw_review["revisions"].items()]
 
             # get and store revisions
             for revision_external_id, revision in revision_info:
