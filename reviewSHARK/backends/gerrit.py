@@ -88,6 +88,13 @@ class Gerrit:
 
         url = self.base_url + "/changes/"  # "https://review.opendev.org/changes?q=repo:openstack/nova"
 
+        try:
+            oldest_review = (
+                CodeReview.objects.filter(code_review_system_ids=self.review_system.id).order_by("updated_at").first()
+            )
+        except DoesNotExist:
+            oldest_review = None
+
         yielded_reviews = 0
 
         next_page = True
@@ -97,7 +104,9 @@ class Gerrit:
                 params={
                     "start": yielded_reviews,
                     "n": 50,
-                    "q": f"repo:{project_name}",
+                    "q": f"repo:{project_name}" + " before:{oldest_review.updated_at.strftime('%Y-%m-%d')}"
+                    if oldest_review
+                    else "",
                     "o": ["ALL_REVISIONS", "DETAILED_ACCOUNTS", "ALL_COMMITS", "SKIP_DIFFSTAT", "COMMIT_FOOTERS"],
                 },
             )
