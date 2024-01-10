@@ -257,27 +257,29 @@ class Gerrit:
             revision = CodeReviewRevision(external_id=raw_revision["revision_external_id"])
 
         revision.code_review_id = code_review_id
-        revision.external_id = raw_revision["revision_external_id"]
+        revision.external_id = raw_revision.get("revision_external_id")
 
-        revision.revision_number = raw_revision["revisions"][raw_revision["revision_external_id"]]["_number"]
+        revision.revision_number = (
+            raw_revision.get("revisions", {}).get(raw_revision.get("revision_external_id"), {}).get("_number")
+        )
 
-        revision.author_id = self._get_people_id(raw_revision["owner"])
+        revision.author_id = self._get_people_id(raw_revision.get("owner"))
         revision.submitter_id = self._get_people_id(raw_revision.get("submitter"))
-        revision.created_at = parse_date(raw_revision["created"])
-        revision.updated_at = parse_date(raw_revision["updated"])
+        revision.created_at = parse_date(raw_revision.get("created"))
+        revision.updated_at = parse_date(raw_revision.get("updated"))
         revision.submitted_at = parse_date(raw_revision.get("submitted"))
 
-        revision.description = raw_revision["description"]
-        revision.commit_hash = raw_revision["commit"]
+        revision.description = raw_revision.get("description")
+        revision.commit_hash = raw_revision.get("commit")
 
         revision.reviewer_ids = [
-            self._get_people_id(raw_reviewer) for raw_reviewer in raw_revision["reviewers"].get("REVIEWER", [])
+            self._get_people_id(raw_reviewer) for raw_reviewer in raw_revision.get("reviewers", {}).get("REVIEWER", [])
         ]
         revision.reviewer_removed_ids = [
-            self._get_people_id(raw_reviewer) for raw_reviewer in raw_revision["reviewers"].get("REMOVED", [])
+            self._get_people_id(raw_reviewer) for raw_reviewer in raw_revision.get("reviewers", {}).get("REMOVED", [])
         ]
         revision.reviewer_removed_ids = [
-            self._get_people_id(raw_reviewer) for raw_reviewer in raw_revision["reviewers"].get("CC", [])
+            self._get_people_id(raw_reviewer) for raw_reviewer in raw_revision.get("reviewers", {}).get("CC", [])
         ]
 
         # revision.labels
@@ -384,7 +386,7 @@ class Gerrit:
                 data = json.loads(content)
                 return data
 
-        return None
+        return {}
 
     def _get_revision_id(self, code_review_id, revision_number):
         """Returns the code review revision id"""
