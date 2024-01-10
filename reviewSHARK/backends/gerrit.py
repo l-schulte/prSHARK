@@ -104,7 +104,7 @@ class Gerrit:
                 params={
                     "start": yielded_reviews,
                     "n": 50,
-                    "q": f"repo:{project_name}" + " before:{oldest_review.updated_at.strftime('%Y-%m-%d')}"
+                    "q": f"repo:{project_name}" + f" before:{oldest_review.updated_at.strftime('%Y-%m-%d')}"
                     if oldest_review
                     else "",
                     "o": ["ALL_REVISIONS", "DETAILED_ACCOUNTS", "ALL_COMMITS", "SKIP_DIFFSTAT", "COMMIT_FOOTERS"],
