@@ -18,16 +18,6 @@ from pycoshark.mongomodels import (
 )
 
 
-def elvis(dict, key, fallback_value=None):
-    """
-    Returns the value of the key in the dict or the fallback_value if the key is not in the dict.
-    :param dict:
-    :param key:
-    :param fallback_value:
-    """
-    return dict[key] if (dict is not None and key in dict and dict[key] is not None) else fallback_value
-
-
 def parse_date(date_string):
     """
     Parses a date string into a datetime object.
@@ -115,7 +105,7 @@ class Gerrit:
                 yield review
 
             yielded_reviews += len(data)
-            next_page = elvis(data[-1], "_more_changes", False)
+            next_page = data[-1].get("_more_changes", False)
 
     def store_review(self, raw_review) -> CodeReview:
         """Stores a review in the database"""
@@ -126,7 +116,7 @@ class Gerrit:
             review = CodeReview(external_id=raw_review["id"])
 
         description = self._get_description_from_revisions(raw_review)
-        topic = elvis(raw_review, "topic")
+        topic = raw_review.get("topic")
 
         review.code_review_system_ids = [self.review_system.id]
         review.external_id = raw_review["id"]
@@ -136,20 +126,20 @@ class Gerrit:
 
         review.title = raw_review["subject"]
         review.description = description
-        review.labels = elvis(raw_review, "hashtags")
+        review.labels = raw_review.get("hashtags")
 
         review.change_id = raw_review["change_id"]
         review.topic = topic
         review.linked_issue_ids = self._get_issue_id(topic, description)
         review.author_id = self._get_people_id(raw_review["owner"])
-        review.submitter_id = self._get_people_id(elvis(raw_review, "submitter"))
+        review.submitter_id = self._get_people_id(raw_review.get("submitter"))
 
         review.status = raw_review["status"]
         review.review_started = raw_review["has_review_started"]
         review.created_at = parse_date(raw_review["created"])
         review.updated_at = parse_date(raw_review["updated"])
         review.submitted_at = parse_date(raw_review["submitted"]) if "submitted" in raw_review else None
-        review.mergable = elvis(raw_review, "mergeable")
+        review.mergable = raw_review.get("mergeable")
         review.current_revision_commit_hash = raw_review["current_revision"]
 
         # review.more = {}
@@ -159,8 +149,8 @@ class Gerrit:
     def _get_description_from_revisions(self, raw_review) -> str:
         """Returns the description from the revisions"""
 
-        if elvis(raw_review, "revisions") and len(raw_review["revisions"].values()):
-            return elvis(list(raw_review["revisions"].values())[-1], "commit_with_footers")
+        if raw_review.get("revisions") and len(raw_review["revisions"].values()):
+            return list(raw_review["revisions"].values())[-1].get("commit_with_footers")
 
     def _get_issue_id(self, topic, description) -> list[str]:
         """Fetches the issue based on the id extracted from the topic.
@@ -222,7 +212,7 @@ class Gerrit:
 
                 change_log.revision_id = self._get_revision_id(code_review_id, raw_change_log["_revision_number"])
 
-                change_log.author_id = self._get_people_id(raw_change_log["author"])
+                change_log.author_id = self._get_people_id(raw_change_log.get("author"))
                 change_log.message = raw_change_log["message"]
 
                 change_log.created_at = parse_date(raw_change_log["date"])
@@ -245,7 +235,7 @@ class Gerrit:
 
         raw_revision_review["revision_external_id"] = revision_external_id
         raw_revision_review["commit"] = revision["commit"]["parents"][0]["commit"]
-        raw_revision_review["description"] = elvis(revision, "description")
+        raw_revision_review["description"] = revision.get("description")
 
         return raw_revision_review
 
@@ -263,22 +253,22 @@ class Gerrit:
         revision.revision_number = raw_revision["revisions"][raw_revision["revision_external_id"]]["_number"]
 
         revision.author_id = self._get_people_id(raw_revision["owner"])
-        revision.submitter_id = self._get_people_id(elvis(raw_revision, "submitter"))
+        revision.submitter_id = self._get_people_id(raw_revision.get("submitter"))
         revision.created_at = parse_date(raw_revision["created"])
         revision.updated_at = parse_date(raw_revision["updated"])
-        revision.submitted_at = parse_date(elvis(raw_revision, "submitted"))
+        revision.submitted_at = parse_date(raw_revision.get("submitted"))
 
         revision.description = raw_revision["description"]
         revision.commit_hash = raw_revision["commit"]
 
         revision.reviewer_ids = [
-            self._get_people_id(raw_reviewer) for raw_reviewer in elvis(raw_revision["reviewers"], "REVIEWER", [])
+            self._get_people_id(raw_reviewer) for raw_reviewer in raw_revision["reviewers"].get("REVIEWER", [])
         ]
         revision.reviewer_removed_ids = [
-            self._get_people_id(raw_reviewer) for raw_reviewer in elvis(raw_revision["reviewers"], "REMOVED", [])
+            self._get_people_id(raw_reviewer) for raw_reviewer in raw_revision["reviewers"].get("REMOVED", [])
         ]
         revision.reviewer_removed_ids = [
-            self._get_people_id(raw_reviewer) for raw_reviewer in elvis(raw_revision["reviewers"], "CC", [])
+            self._get_people_id(raw_reviewer) for raw_reviewer in raw_revision["reviewers"].get("CC", [])
         ]
 
         # revision.labels
@@ -314,13 +304,13 @@ class Gerrit:
 
                 comment.author_id = self._get_people_id(raw_comment["author"])
                 comment.message = raw_comment["message"]
-                comment.in_reply_to_id = elvis(raw_comment, "in_reply_to")
+                comment.in_reply_to_id = raw_comment.get("in_reply_to")
 
                 comment.updated_at = parse_date(raw_comment["updated"])
 
                 comment.file_path = file_path
                 comment.commit_id = raw_comment["commit_id"]
-                comment.line = elvis(raw_comment, "line")
+                comment.line = raw_comment.get("line")
 
                 comment.more = {
                     "change_message_id": raw_comment["change_message_id"],
@@ -348,8 +338,8 @@ class Gerrit:
                 saved_people = People.objects.get(username=raw_people["username"], name=raw_people["name"])
 
         except DoesNotExist:
-            username = elvis(raw_people, "username", f'{raw_people["name"]}@no_username.gerrit.reviewSHARK')
-            email = elvis(raw_people, "email", f"{username}@no_email.gerrit.reviewSHARK")
+            username = raw_people.get("username", f'{raw_people["name"]}@no_username.gerrit.reviewSHARK')
+            email = raw_people.get("email", f"{username}@no_email.gerrit.reviewSHARK")
 
             people = People(
                 username=username,
