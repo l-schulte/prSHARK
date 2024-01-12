@@ -174,8 +174,13 @@ class Gerrit:
 
         if topic:
             potential_issue_external_ids.add(topic.split("/")[-1])
-        elif description:
+        if description:
             p = re.compile("bug:? *#?(\d+)", re.IGNORECASE)
+            matches = p.findall(description)
+            for m in matches:
+                potential_issue_external_ids.add(m)
+
+            p = re.compile("(?:bp|blueprint)(?::? |/)((?:\w+-?)+)", re.IGNORECASE)
             matches = p.findall(description)
             for m in matches:
                 potential_issue_external_ids.add(m)
