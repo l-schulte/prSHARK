@@ -170,15 +170,15 @@ class Gerrit:
         if not self.config.link:
             return None
 
-        potential_issue_external_ids = []
+        potential_issue_external_ids = set()
 
         if topic:
-            potential_issue_external_ids.append(topic.split("/")[-1])
+            potential_issue_external_ids.add(topic.split("/")[-1])
         elif description:
-            p = re.compile("bug: *#?(\d+)", re.IGNORECASE)
-            m = p.search(description)
-            if m:
-                potential_issue_external_ids.append(m.group())
+            p = re.compile("bug:? *#?(\d+)", re.IGNORECASE)
+            matches = p.findall(description)
+            for m in matches:
+                potential_issue_external_ids.add(m)
 
         issue_ids = set()
 
@@ -341,23 +341,25 @@ class Gerrit:
     def _store_people(self, raw_people) -> People:
         """Stores a people in the database"""
 
+        name = raw_people.get("name", "no_name.gerrit.reviewSHARK")
+
         try:
             # Try to identify the user by their email. If no email is given try the username.
             if "email" in raw_people:
-                saved_people = People.objects.get(email=raw_people["email"], name=raw_people["name"])
+                saved_people = People.objects.get(email=raw_people["email"], name=name)
             elif "username" in raw_people:
-                saved_people = People.objects.get(username=raw_people["username"], name=raw_people["name"])
+                saved_people = People.objects.get(username=raw_people["username"], name=name)
             else:
                 raise DoesNotExist
 
         except DoesNotExist:
-            username = raw_people.get("username", f'{raw_people["name"]}@no_username.gerrit.reviewSHARK')
+            username = raw_people.get("username", f"{name}@no_username.gerrit.reviewSHARK")
             email = raw_people.get("email", f"{username}@no_email.gerrit.reviewSHARK")
 
             people = People(
                 username=username,
                 email=email,
-                name=raw_people["name"],
+                name=name,
             )
             saved_people = people.save()
 
