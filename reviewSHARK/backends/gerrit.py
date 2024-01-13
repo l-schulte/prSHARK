@@ -329,8 +329,8 @@ class Gerrit:
                 comment.line = raw_comment.get("line")
 
                 comment.more = {
-                    "change_message_id": raw_comment["change_message_id"],
-                    "unresolved": raw_comment["unresolved"],
+                    "change_message_id": raw_comment.get("change_message_id"),
+                    "unresolved": raw_comment.get("unresolved"),
                 }
 
                 if comment.id is not None:
