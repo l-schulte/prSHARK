@@ -347,20 +347,16 @@ class Gerrit:
         """Stores a people in the database"""
 
         name = raw_people.get("name", "no_name.gerrit.reviewSHARK")
+        username = raw_people.get("username", f"{name}@no_username.gerrit.reviewSHARK")
+        email = raw_people.get("email", f"{username}@no_email.gerrit.reviewSHARK")
 
         try:
             # Try to identify the user by their email. If no email is given try the username.
-            if "email" in raw_people:
-                saved_people = People.objects.get(email=raw_people["email"], name=name)
-            elif "username" in raw_people:
-                saved_people = People.objects.get(username=raw_people["username"], name=name)
-            else:
-                raise DoesNotExist
-
+            try:
+                saved_people = People.objects.get(email=email, name=name)
+            except DoesNotExist:
+                saved_people = People.objects.get(username=username, name=name)
         except DoesNotExist:
-            username = raw_people.get("username", f"{name}@no_username.gerrit.reviewSHARK")
-            email = raw_people.get("email", f"{username}@no_email.gerrit.reviewSHARK")
-
             people = People(
                 username=username,
                 email=email,
