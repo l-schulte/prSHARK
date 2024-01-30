@@ -104,9 +104,8 @@ class Gerrit:
                 params={
                     "start": yielded_reviews,
                     "n": 50,
-                    "q": f"repo:{project_name}" + f" before:{oldest_review.updated_at.strftime('%Y-%m-%d')}"
-                    if oldest_review
-                    else "",
+                    "q": f"repo:{project_name}"
+                    + (f" before:{oldest_review.updated_at.strftime('%Y-%m-%d')}" if oldest_review else ""),
                     "o": ["ALL_REVISIONS", "DETAILED_ACCOUNTS", "ALL_COMMITS", "SKIP_DIFFSTAT", "COMMIT_FOOTERS"],
                 },
             )
@@ -376,10 +375,7 @@ class Gerrit:
 
             if response.status_code != 200:
                 self._log.error(
-                    "Problem with getting data via url %s. Code: %s, Error: %s",
-                    url,
-                    response.status_code,
-                    response.text,
+                    f"Problem with getting data via url {url} with params {params}. Code: {response.status_code}, Error: {response.text}"
                 )
 
                 tries += 1
