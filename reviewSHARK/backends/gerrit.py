@@ -6,7 +6,7 @@ import dateutil
 import time
 import re
 
-from mongoengine.errors import DoesNotExist
+from mongoengine.errors import DoesNotExist, MultipleObjectsReturned
 from pycoshark.mongomodels import (
     CodeReview,
     CodeReviewChangeLog,
@@ -355,7 +355,7 @@ class Gerrit:
                 saved_people = People.objects.get(email=email, name=name)
             except DoesNotExist:
                 saved_people = People.objects.get(username=username, name=name)
-        except DoesNotExist:
+        except (DoesNotExist, MultipleObjectsReturned):
             people = People(
                 username=username,
                 email=email,
