@@ -408,7 +408,7 @@ class Github():
                     mongo_prrc.author_association = prrc['author_association']
 
                     mongo_prrc.commit_sha = prrc['commit_id']
-                    mongo_prrc.original_commit_sha = prrc['original_commit_id']
+                    mongo_prrc.original_commit_sha = prrc.get('original_commit_id')
 
                     # we link the PullRequestCommits directly if we can
                     # the pullrequestcommits may have been removed or squashed, if that is the case we only have the commit_shas
