@@ -49,21 +49,27 @@ class Github():
             if resp.status_code != 200:
                 self._log.error("Problem with getting data via url %s. Code: %s, Error: %s", url, resp.status_code, resp.text)
 
-                # check if we just miss some field, e.g., pulls/{number}/files?&page=1&per_page=100.
-                # Error: {"message":"Sorry, there was a problem generating this diff. The repository may be missing relevant data.","errors":[{"resource":"PullRequest","field":"diff","code":"not_available"}],"documentation_url":"https://docs.github.com/v3/pulls#diff-error"}
-                if resp.status_code == 422:
-                    r = resp.json()
-                    if r:
-                        if 'errors' in r.keys():
-                            for e in r['errors']:
-                                if e['resource'] == 'PullRequest' and e['field'] == 'diff' and e['code'] == 'not_available' and 'per_page' in url:  # we try to be as explicit as possible here
-                                    self._log.error('unfetchable files for pull request, returning [], try: %s', tries)
-                                    return []
-                if resp.status_code == 500 and tries == 2:  # problem for some part of endpoints, e.g., https://api.github.com/repos/apache/kafka/pulls/3490/reviews/48104142/comments?&page=1&per_page=100
-                    self._log.error("Problem with getting data via url %s. Code: %s, Error: %s", url, resp.status_code, resp.text)
-                    if 'per_page' in url:
-                        self._log.error('unfetchable list, returning [], try: %s', tries)
-                        return []
+                try:
+                    # check if we just miss some field, e.g., pulls/{number}/files?&page=1&per_page=100.
+                    # Error: {"message":"Sorry, there was a problem generating this diff. The repository may be missing relevant data.","errors":[{"resource":"PullRequest","field":"diff","code":"not_available"}],"documentation_url":"https://docs.github.com/v3/pulls#diff-error"}
+                    if resp.status_code == 422:
+                        r = resp.json()
+                        if r:
+                            if 'errors' in r.keys():
+                                for e in r['errors']:
+                                    if e['resource'] == 'PullRequest' and e['field'] == 'diff' and e['code'] == 'not_available' and 'per_page' in url:  # we try to be as explicit as possible here
+                                        self._log.error('unfetchable files for pull request, returning [], try: %s', tries)
+                                        return []
+                    if resp.status_code == 500 and tries == 2:  # problem for some part of endpoints, e.g., https://api.github.com/repos/apache/kafka/pulls/3490/reviews/48104142/comments?&page=1&per_page=100
+                        self._log.error("Problem with getting data via url %s. Code: %s, Error: %s", url, resp.status_code, resp.text)
+                        if 'per_page' in url:
+                            self._log.error('unfetchable list, returning [], try: %s', tries)
+                            return []
+                        
+                except Exception as e:
+                    self._log.error('Python exception while parsing error response via url %s. Code: %s, Error: %s, Exception: %s', url, resp.status_code, resp.text , e)
+                    return []        
+                
                 tries += 1
                 time.sleep(2)
             else:
