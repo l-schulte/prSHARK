@@ -24,6 +24,7 @@ class Github():
         self._p = project
 
         self._people = {}  # people cache
+        self.current_token_index = 0
 
     def _send_request(self, url):
         """
@@ -36,7 +37,11 @@ class Github():
 
         # If tokens are used, set the header, if not use basic authentication
         if self.config.use_token():
-            headers = {'Authorization': 'token %s' % self.config.token}
+            headers = {'Authorization': 'token %s' % self.config.token[self.current_token_index]}
+
+            self.current_token_index = (self.current_token_index + 1) % len(
+                self.config.token
+            )
         else:
             auth = requests.auth.HTTPBasicAuth(self.config.issue_user, self.config.issue_password)
 
@@ -228,7 +233,7 @@ class Github():
 
     def fetch_pr_list(self):
         """Fetch complete list of pull requests for this the url passed on the command line."""
-        url = '{}?state=all'.format(self.config.tracking_url)  # this is where we would put since=last_updated_at if it would be supported by the github api
+        url = '{}?state=all&sort=asc'.format(self.config.tracking_url)  # this is where we would put since=last_updated_at if it would be supported by the github api
         return self._fetch_all_pages(url)
 
     def fetch_review_list(self, pr_number):

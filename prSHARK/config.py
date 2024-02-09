@@ -21,7 +21,7 @@ class Config(object):
         """
         self.tracking_url = args.prurl.rstrip('/')
         self.identifier = args.backend
-        self.token = args.token
+        self.token = args.token.split(",")
         self.project_name = args.project_name
         self.host = args.db_hostname
         self.port = args.db_port
