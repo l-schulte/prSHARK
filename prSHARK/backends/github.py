@@ -67,7 +67,7 @@ class Github():
                             return []
                         
                 except Exception as e:
-                    self._log.error('Python exception while parsing error response via url %s. Code: %s, Error: %s, Exception: %s', url, resp.status_code, resp.text , e)
+                    self._log.error('Python exception while parsing error response: %s', e)
                     return []        
                 
                 tries += 1
