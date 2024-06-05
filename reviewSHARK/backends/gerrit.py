@@ -345,9 +345,8 @@ class Gerrit:
     def _store_people(self, raw_people) -> People:
         """Stores a people in the database"""
 
-        name = raw_people.get("name", "no_name.gerrit.reviewSHARK")
-        username = raw_people.get("username", f"{name}@no_username.gerrit.reviewSHARK")
-        email = raw_people.get("email", f"{username}@no_email.gerrit.reviewSHARK")
+        name = raw_people.get("name", "no_name.gerrit")
+        email = raw_people.get("email", f"{name}@no_email.gerrit")
 
         try:
             saved_people = People.objects.get(email=email, name=name)
