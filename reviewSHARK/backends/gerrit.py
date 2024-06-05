@@ -350,16 +350,11 @@ class Gerrit:
         email = raw_people.get("email", f"{username}@no_email.gerrit.reviewSHARK")
 
         try:
-            # Try to identify the user by their email. If no email is given try the username.
-            try:
-                saved_people = People.objects.get(email=email, name=name)
-            except DoesNotExist:
-                saved_people = People.objects.get(username=username, name=name)
+            saved_people = People.objects.get(email=email, name=name)
         except (DoesNotExist, MultipleObjectsReturned):
             people = People(
-                username=username,
                 email=email,
-                name=name,
+                name=name
             )
             saved_people = people.save()
 
