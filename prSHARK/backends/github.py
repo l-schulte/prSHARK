@@ -206,6 +206,9 @@ class Github():
             dat = self._send_request(url)
             ret += dat
             self._log.debug('response length %s, return length %s', len(dat), len(ret))
+
+            if page % 100 == 0:
+                self._log.info('fetching page %s from url: %s', page, base_url)
         return ret
 
     def run(self):
@@ -277,7 +280,7 @@ class Github():
             self._log.info('saving pull request %s', pr['number'])
             try:
                 mongo_pr = PullRequest.objects.get(pull_request_system_id=self._prs.id, external_id=str(pr['number']))
-                return
+                pass
             except PullRequest.DoesNotExist:
                 mongo_pr = PullRequest(pull_request_system_id=self._prs.id, external_id=str(pr['number']))
 
