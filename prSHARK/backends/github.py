@@ -277,6 +277,7 @@ class Github():
             self._log.info('saving pull request %s', pr['number'])
             try:
                 mongo_pr = PullRequest.objects.get(pull_request_system_id=self._prs.id, external_id=str(pr['number']))
+                return
             except PullRequest.DoesNotExist:
                 mongo_pr = PullRequest(pull_request_system_id=self._prs.id, external_id=str(pr['number']))
 
