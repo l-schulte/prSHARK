@@ -276,11 +276,16 @@ class Github():
         """Parse response from the Github API.
         We are saving all mongo objects here.
         """
+
+        existing_pr_external_ids = set([pr.external_id for pr in PullRequest.objects(pull_request_system_id=self._prs.id).only('external_id')])
+
         for pr in prs:
             self._log.info('saving pull request %s', pr['number'])
+            if pr['number'] in existing_pr_external_ids:
+                continue
             try:
                 mongo_pr = PullRequest.objects.get(pull_request_system_id=self._prs.id, external_id=str(pr['number']))
-                pass
+                continue
             except PullRequest.DoesNotExist:
                 mongo_pr = PullRequest(pull_request_system_id=self._prs.id, external_id=str(pr['number']))
 
