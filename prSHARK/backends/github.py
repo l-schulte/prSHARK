@@ -6,7 +6,7 @@ import copy
 import requests
 import dateutil
 from deepdiff import DeepDiff
-
+from prSHARK.utils import process_date
 from pycoshark.mongomodels import VCSSystem, Commit, PullRequest, People, PullRequestReview, PullRequestReviewComment, \
     PullRequestComment, PullRequestEvent, PullRequestFile, PullRequestSystem
 
@@ -336,14 +336,14 @@ class Github:
             new_pr.is_locked = pr['locked']
             new_pr.lock_reason = pr['active_lock_reason']
             new_pr.is_draft = pr['draft']
-            new_pr.created_at = dateutil.parser.parse(pr['created_at'])
-            new_pr.updated_at = dateutil.parser.parse(pr['updated_at'])
+            new_pr.created_at = process_date(pr['created_at'])
+            new_pr.updated_at = process_date(pr['updated_at'])
 
             if pr['closed_at']:
-                new_pr.closed_at = dateutil.parser.parse(pr['closed_at'])
+                new_pr.closed_at = process_date(pr['closed_at'])
 
             if pr['merged_at']:
-                new_pr.merged_at = dateutil.parser.parse(pr['merged_at'])
+                new_pr.merged_at = process_date(pr['merged_at'])
 
             if pr['assignee']:
                 new_pr.assignee_id = self._get_person(pr['assignee']['url'])
@@ -424,7 +424,7 @@ class Github:
             if e['actor']:
                 new_pre.author_id = self._get_person(e['actor']['url'])
 
-            new_pre.created_at = dateutil.parser.parse(e['created_at'])
+            new_pre.created_at = process_date(e['created_at'])
             new_pre.event_type = e['event']
 
             if e['commit_id']:
@@ -494,8 +494,8 @@ class Github:
                 mongo_prc = None
 
         new_prc = PullRequestComment(external_id=str(c['id']))
-        new_prc.created_at = dateutil.parser.parse(c['created_at'])
-        new_prc.updated_at = dateutil.parser.parse(c['updated_at'])
+        new_prc.created_at = process_date(c['created_at'])
+        new_prc.updated_at = process_date(c['updated_at'])
         new_prc.author_id = self._get_person(c['user']['url'])
         new_prc.comment = c['body']
         new_prc.author_association = c['author_association']
@@ -527,7 +527,7 @@ class Github:
 
         new_prr.state = prr['state']
         new_prr.description = prr['body']
-        new_prr.submitted_at = dateutil.parser.parse(prr['submitted_at'])
+        new_prr.submitted_at = process_date(prr['submitted_at'])
         if 'commit_id' in prr.keys():
             new_prr.commit_sha = prr['commit_id']
         if prr['user']:
@@ -573,8 +573,8 @@ class Github:
         new_prrc.comment = prrc['body']
         if prrc['user']:
             new_prrc.creator_id = self._get_person(prrc['user']['url'])
-        new_prrc.created_at = dateutil.parser.parse(prrc['created_at'])
-        new_prrc.updated_at = dateutil.parser.parse(prrc['updated_at'])
+        new_prrc.created_at = process_date(prrc['created_at'])
+        new_prrc.updated_at = process_date(prrc['updated_at'])
         new_prrc.author_association = prrc['author_association']
         new_prrc.commit_sha = prrc['commit_id']
         new_prrc.original_commit_sha = prrc['original_commit_id']
@@ -615,8 +615,11 @@ class Github:
         :param ex_path: List of paths to be excluded from the comparison.
 
         """
+        if self.pr_id not in self.pr_diff:
+            self.pr_diff[self.pr_id] = False
+
         if old:
-            diff = DeepDiff(t1=old.__dict__, t2=new.__dict__, exclude_paths=ex_path)
+            diff = DeepDiff(t1=old.to_mongo().to_dict(), t2=new.to_mongo().to_dict(), exclude_paths=['_id', ex_path])
             if diff:
                 self.pr_diff[self.pr_id] = True
         else:

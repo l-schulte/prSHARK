@@ -206,3 +206,94 @@ class TestGithubBackend(unittest.TestCase):
         self.assertEqual(prccf.deletions, 21)
         self.assertEqual(prccf.changes, 103 + 21)
         self.assertEqual(prccf.patch, "@@ -132,7 +132,7 @@ module Test @@ -1000,7 +1000,7 @@ module Test")
+
+    @patch('prSHARK.backends.github.Github._send_request', side_effect=mock_return)
+    def test_update_without_changes(self, mock_request):
+        """
+        In this test, we save the same pr twice,We expect the system to recognize that there is no change
+        and add the new pull_request_system_ids to the list.
+        """
+
+        cfg = Namespace(tracking_url='https://localhost/repos/smartshark/test/pulls')
+
+        project = Project.objects.get(name='test')
+
+        vcs_system = VCSSystem(project_id=project.id, url='https://github.com/octocat/Hello-World.git',
+                               repository_type='git', collection_date=datetime.datetime.now())
+        vcs_system.save()
+
+        c = Commit(vcs_system_ids=[vcs_system.id], revision_hash='6dcb09b5b57875f334f61aebed695e2e4193db5e')
+        c.save()
+
+        mc = Commit(vcs_system_ids=[vcs_system.id], revision_hash='e5bd3914e2e596debea16f433f57875b5b90bcd6')
+        mc.save()
+
+        gp1 = Github(cfg, project)
+        gp1.run()
+        gp1 = Github(cfg, project)
+        gp1.run()
+        pr = PullRequest.objects.get(external_id='1347')
+        prr = PullRequestReview.objects.filter(pull_request_id=pr.id)
+        prrc = PullRequestReviewComment.objects.filter(external_id='10')
+        prc = PullRequestComment.objects.filter(pull_request_id=pr.id)
+        pre = PullRequestEvent.objects.filter(pull_request_id=pr.id)
+        prccf = PullRequestFile.objects.filter(pull_request_id=pr.id)
+
+        self.assertEqual(len(pr.pull_request_system_ids), 2)
+        self.assertEqual(len(prr), 1)
+        self.assertEqual(len(prrc), 1)
+        self.assertEqual(len(prc), 1)
+        self.assertEqual(len(pre), 1)
+        self.assertEqual(len(prccf), 1)
+
+    @patch('prSHARK.backends.github.Github._send_request', side_effect=mock_return)
+    def test_update_with_changes(self, mock_request):
+        """
+         In this test, we save a pr, make a modification to the same pr, and attempt to save it again.
+         We expect the system to recognize the change and save the pr as a different one, without overriding the original
+
+         """
+        cfg = Namespace(tracking_url='https://localhost/repos/smartshark/test/pulls')
+
+        project = Project.objects.get(name='test')
+
+        vcs_system = VCSSystem(project_id=project.id, url='https://github.com/octocat/Hello-World.git',
+                               repository_type='git', collection_date=datetime.datetime.now())
+        vcs_system.save()
+
+        c = Commit(vcs_system_ids=[vcs_system.id], revision_hash='6dcb09b5b57875f334f61aebed695e2e4193db5e')
+        c.save()
+
+        mc = Commit(vcs_system_ids=[vcs_system.id], revision_hash='e5bd3914e2e596debea16f433f57875b5b90bcd6')
+        mc.save()
+
+        gp1 = Github(cfg, project)
+        gp1.run()
+        review_comment_list[0]['position'] = 2
+        gp2 = Github(cfg, project)
+        gp2.run()
+        pr = PullRequest.objects.filter(external_id='1347')
+        prr = PullRequestReview.objects.filter(external_id='80')
+        prrc = PullRequestReviewComment.objects.filter(external_id='10')
+        prc = PullRequestComment.objects.filter(external_id='1')
+        pre = PullRequestEvent.objects.filter(external_id='1')
+        prccf = PullRequestFile.objects.filter(path='file1.txt')
+
+        self.assertEqual(len(pr), 2)
+        self.assertEqual(pr[0].pull_request_system_ids, [gp1.pr_system.id])
+        self.assertEqual(pr[1].pull_request_system_ids, [gp2.pr_system.id])
+        self.assertEqual(len(prr), 2)
+        self.assertEqual(prr[0].pull_request_id, pr[0].id)
+        self.assertEqual(prr[1].pull_request_id, pr[1].id)
+        self.assertEqual(len(prrc), 2)
+        self.assertEqual(prrc[0].pull_request_review_id, prr[0].id)
+        self.assertEqual(prrc[1].pull_request_review_id, prr[1].id)
+        self.assertEqual(len(prc), 2)
+        self.assertEqual(prc[0].pull_request_id, pr[0].id)
+        self.assertEqual(prc[1].pull_request_id, pr[1].id)
+        self.assertEqual(len(pre), 2)
+        self.assertEqual(pre[0].pull_request_id, pr[0].id)
+        self.assertEqual(pre[1].pull_request_id, pr[1].id)
+        self.assertEqual(len(prccf), 2)
+        self.assertEqual(prccf[0].pull_request_id, pr[0].id)
+        self.assertEqual(prccf[1].pull_request_id, pr[1].id)
