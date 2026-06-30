@@ -1,7 +1,7 @@
 #!/bin/sh
 PLUGIN_PATH=${1}
 
-COMMAND="python3.5 ${1}/smartshark_plugin.py --db-database ${4} --db-hostname ${5} --db-port ${6} --project-name ${8} --prurl ${9} --backend ${10}"
+COMMAND="python3 ${1}/smartshark_plugin.py --db-database ${4} --db-hostname ${5} --db-port ${6} --project-name ${8} --prurl ${9} --backend ${10}"
 
 if [ ! -z ${11} ] && [ ${11} != "None" ]; then
     COMMAND="$COMMAND --token ${11}"

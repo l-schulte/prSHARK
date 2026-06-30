@@ -1,4 +1,4 @@
-pycoshark==1.4.1
+pycoshark==1.4.5
 requests==2.25.0
 mongomock==3.21.0
 deepdiff
