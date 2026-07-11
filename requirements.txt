@@ -1,4 +1,4 @@
-pycoshark>=1.4.5
+pycoshark @ git+https://github.com/smartshark/pycoSHARK.git@2.0.0
 requests==2.25.0
 mongomock==3.21.0
 deepdiff
