@@ -16,7 +16,7 @@ setup(
     description='Collect data from pull request systems',
     install_requires=['mongoengine', 'pymongo', 'requests>=2.10.0', 'oauthlib>=3.0.0',
                       'cryptography>=1.3.4', 'python-dateutil', 'validate_email',
-                      'pycoshark @ git+https://github.com/smartshark/pycoSHARK.git@2.0.0', 'mock', 'deepdiff', 'pytz'],
+                      'pycoshark @ git+https://github.com/smartshark/pycoSHARK.git@2.0.1', 'mock', 'deepdiff', 'pytz'],
     url='https://github.com/smartshark/prSHARK',
     download_url='https://github.com/smartshark/prSHARK/zipball/master',
     packages=find_packages(),
