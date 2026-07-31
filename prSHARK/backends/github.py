@@ -9,6 +9,8 @@ import dateutil
 from deepdiff import DeepDiff
 from prSHARK.utils import process_date
 from pycoshark.mongomodels import (
+    PullRequestCommitData,
+    PullRequestCommitParentData,
     VCSSystem,
     Commit,
     PullRequest,
@@ -421,6 +423,55 @@ class Github:
 
             # events
             self.parse_events(mongo_pr, pr)
+
+            # commits
+            self.parse_commits(mongo_pr, pr)
+
+    def parse_commits(self, mongo_pr, pr):
+        """
+        Parse and process commits associated with a pull request.
+
+        :param mongo_pr: The MongoDB representation of the pull request.
+        :param pr: The pull request data from an external source (e.g., GitHub API).
+        :return: None
+        """
+
+        existing_commits_dict = {commit.sha: commit for commit in mongo_pr.commits}
+        new_commits = []
+        for commit in self.fetch_commit_list(pr["number"]):
+            if commit["sha"] not in existing_commits_dict:
+                author_id = self._get_person_without_url(
+                    commit["commit"]["author"]["name"],
+                    commit["commit"]["author"]["email"],
+                )
+                committer_id = self._get_person_without_url(
+                    commit["commit"]["committer"]["name"],
+                    commit["commit"]["committer"]["email"],
+                )
+                parents = []
+                for parent in commit["parents"]:
+                    parents.append(
+                        PullRequestCommitParentData(
+                            commit_sha=parent["sha"],
+                            commit_id=self._get_commit_id(parent["sha"], self._get_repo_url(parent["url"])),
+                        )
+                    )
+
+                commit_doc = PullRequestCommitData(
+                    commit_id=None,
+                    commit_sha=commit["sha"],
+                    author_id=author_id,
+                    committer_id=committer_id,
+                    message=commit["commit"]["message"],
+                    parents=parents,
+                )
+
+                new_commits.append(commit_doc)
+            else:
+                new_commits.append(existing_commits_dict[commit["sha"]])
+
+        self.parsed_prs["prs"][self.pr_id].commits = new_commits
+        self.check_diff(mongo_pr.commits, new_commits, "pull_request_id")
 
     def parse_events(self, mongo_pr, pr):
         """
