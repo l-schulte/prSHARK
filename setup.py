@@ -22,7 +22,7 @@ setup(
         "cryptography>=1.3.4",
         "python-dateutil",
         "validate_email",
-        "pycoshark @ git+https://github.com/smartshark/pycoSHARK.git@2.0.1",
+        # "pycoshark @ git+https://github.com/smartshark/pycoSHARK.git@2.0.1",
         "mock",
         "deepdiff",
         "pytz",

@@ -226,6 +226,16 @@ class TestGithubBackend(unittest.TestCase):
         self.assertEqual(prccf.changes, 103 + 21)
         self.assertEqual(prccf.patch, "@@ -132,7 +132,7 @@ module Test @@ -1000,7 +1000,7 @@ module Test")
 
+        # everything for the commits parsed by parse_commits
+        self.assertEqual(len(pr.commits), 1)
+        self.assertEqual(pr.commits[0].commit_sha, "6dcb09b5b57875f334f61aebed695e2e4193db5e")
+        self.assertEqual(pr.commits[0].message, "Fix all the bugs")
+        self.assertIsNotNone(pr.commits[0].author_id)
+        self.assertIsNotNone(pr.commits[0].committer_id)
+        self.assertEqual(len(pr.commits[0].parents), 1)
+        self.assertEqual(pr.commits[0].parents[0].commit_sha, "e5bd3914e2e596debea16f433f57875b5b90bcd6")
+        self.assertEqual(pr.commits[0].parents[0].commit_id, mc.id)
+
     @patch("prSHARK.backends.github.Github._send_request", side_effect=mock_return)
     def test_update_without_changes(self, mock_request):
         """
