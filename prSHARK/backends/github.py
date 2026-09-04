@@ -436,7 +436,8 @@ class Github:
         :return: None
         """
 
-        existing_commits_dict = {commit.sha: commit for commit in mongo_pr.commits}
+        existing_commits = mongo_pr.commits if mongo_pr else None
+        existing_commits_dict = {commit.commit_sha: commit for commit in existing_commits or []}
         new_commits = []
         for commit in self.fetch_commit_list(pr["number"]):
             if commit["sha"] not in existing_commits_dict:
@@ -471,7 +472,7 @@ class Github:
                 new_commits.append(existing_commits_dict[commit["sha"]])
 
         self.parsed_prs["prs"][self.pr_id].commits = new_commits
-        self.check_diff(mongo_pr.commits, new_commits, "pull_request_id")
+        self.check_diff(existing_commits, new_commits, "pull_request_id")
 
     def parse_events(self, mongo_pr, pr):
         """
@@ -688,7 +689,14 @@ class Github:
             self.pr_diff[self.pr_id] = False
 
         if old:
-            diff = DeepDiff(t1=old.to_mongo().to_dict(), t2=new.to_mongo().to_dict(), exclude_paths=["_id", ex_path])
+            if isinstance(old, (list, tuple)):
+                old_dict = [o.to_mongo().to_dict() for o in old]
+                new_dict = [n.to_mongo().to_dict() for n in new]
+                diff = DeepDiff(t1=old_dict, t2=new_dict, exclude_paths=["_id", ex_path])
+            else:
+                diff = DeepDiff(
+                    t1=old.to_mongo().to_dict(), t2=new.to_mongo().to_dict(), exclude_paths=["_id", ex_path]
+                )
             if diff:
                 self.pr_diff[self.pr_id] = True
         else:
