@@ -47,6 +47,26 @@ class Github:
 
         self._people = {}  # people cache
 
+    def _parse_response(self, resp, url):
+        """
+        Parses the JSON body of a requests response, logging the url, status code and
+        body if the response is not valid JSON so that the offending request can be traced.
+
+        :param resp: requests response object
+        :param url: url to which the request was sent
+        :return: parsed JSON content
+        """
+        try:
+            return resp.json()
+        except ValueError:
+            self._log.error(
+                "Failed to parse JSON response for url %s. Code: %s, Body: %s",
+                url,
+                resp.status_code,
+                resp.text[:1000],
+            )
+            raise
+
     def _send_request(self, url):
         """
         Sends arequest using the requests library to the url specified
@@ -76,7 +96,7 @@ class Github:
                 # check if we just miss some field, e.g., pulls/{number}/files?&page=1&per_page=100.
                 # Error: {"message":"Sorry, there was a problem generating this diff. The repository may be missing relevant data.","errors":[{"resource":"PullRequest","field":"diff","code":"not_available"}],"documentation_url":"https://docs.github.com/v3/pulls#diff-error"}
                 if resp.status_code == 422:
-                    r = resp.json()
+                    r = self._parse_response(resp, url)
                     if r:
                         if "errors" in r.keys():
                             for e in r["errors"]:
@@ -114,9 +134,11 @@ class Github:
 
                     resp = requests.get(url, headers=headers, proxies=self.config.get_proxy_dictionary(), auth=auth)
 
-                self._log.debug("Got response: %s", resp.json())
+                data = self._parse_response(resp, url)
 
-                return resp.json()
+                self._log.debug("Got response: %s", data)
+
+                return data
 
         raise requests.RequestException("Problem with getting data via url %s." % url)
 
