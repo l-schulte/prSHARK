@@ -3,6 +3,7 @@
 import datetime
 import unittest
 import json
+import requests
 from unittest.mock import patch
 from argparse import Namespace
 import mongomock
@@ -334,3 +335,27 @@ class TestGithubBackend(unittest.TestCase):
         self.assertEqual(len(prccf), 2)
         self.assertEqual(prccf[0].pull_request_id, pr[0].id)
         self.assertEqual(prccf[1].pull_request_id, pr[1].id)
+
+    def test_get_person_deleted_user(self):
+        """
+        A user url that returns a 404 (deleted/suspended account) must not abort parsing.
+        We expect a placeholder People entry with name 'deleted_<login>' derived from the url.
+        """
+        cfg = Namespace(tracking_url="https://localhost/repos/smartshark/test/pulls")
+        project = Project.objects.get(name="test")
+
+        gp = Github(cfg, project)
+
+        def raise_404(*args, **kwargs):
+            raise requests.RequestException("Problem with getting data via url %s." % args[0])
+
+        with patch.object(gp, "_send_request", side_effect=raise_404):
+            people_id = gp._get_person("https://api.github.com/users/Copilot")
+
+        person = People.objects.get(id=people_id)
+        self.assertEqual(person.name, "deleted_Copilot")
+        self.assertEqual(person.username, "Copilot")
+        self.assertEqual(person.email, "null")
+
+        # the result must be cached so we do not hit the api again
+        self.assertIn("https://api.github.com/users/Copilot", gp._people)

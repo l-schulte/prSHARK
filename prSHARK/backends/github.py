@@ -190,16 +190,24 @@ class Github:
             login = "invalid-email-address"
             email = "null"
         else:
-            raw_user = self._send_request(user_url)
-            name = raw_user["name"]
-            login = raw_user["login"]
-
-            if name is None:
-                name = raw_user["login"]
-
-            email = raw_user["email"]
-            if email is None:
+            try:
+                raw_user = self._send_request(user_url)
+            except requests.RequestException:
+                # deleted or suspended accounts (e.g. the GitHub Copilot bot) return a 404.
+                # We still need a person, so we derive it from the url and prefix the name.
+                login = user_url.rstrip("/").split("/")[-1]
+                name = "deleted_%s" % login
                 email = "null"
+            else:
+                name = raw_user["name"]
+                login = raw_user["login"]
+
+                if name is None:
+                    name = raw_user["login"]
+
+                email = raw_user["email"]
+                if email is None:
+                    email = "null"
 
         people_id = People.objects(name=name, email=email).upsert_one(name=name, email=email, username=login).id
         self._people[user_url] = people_id
